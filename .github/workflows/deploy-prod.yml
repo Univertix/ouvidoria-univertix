@@ -1,4 +1,4 @@
-name: "Deploy para VPS - matipo.univertix.edu.br"
+name: "Deploy para VPS - ouvidoria.univertix.edu.br"
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
           cache: "npm"
 
       - name: "Instalar dependências"
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: "Build do Next"
         env:
@@ -47,7 +47,7 @@ jobs:
           port: ${{ secrets.PORT }}
           script: |
             cd /home/projetos/servidores/ouvidoria-univertix
-            npm ci --omit=dev || npm install --omit=dev
+            npm install --omit=dev --legacy-peer-deps
             npx prisma generate
             npx prisma db push
             pm2 restart ouvidoria-univertix || pm2 start npm --name "ouvidoria-univertix" -- run start
