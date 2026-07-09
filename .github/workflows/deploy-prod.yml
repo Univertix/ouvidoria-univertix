@@ -1,15 +1,4 @@
-name: "Deploy para VPS - ouvidoria.univertix.edu.br"
-
-on:
-  push:
-    branches:
-      - main
-
-jobs:
-  build_deploy:
-    runs-on: ubuntu-latest
-
-    steps:
+steps:
       - name: "Baixar o Código"
         uses: actions/checkout@v4
 
@@ -21,6 +10,10 @@ jobs:
 
       - name: "Instalar dependências"
         run: npm install --legacy-peer-deps
+
+      # ADICIONAMOS ESTA ETAPA AQUI!
+      - name: "Gerar Prisma Client no Runner"
+        run: npx prisma generate
 
       - name: "Build do Next"
         env:
