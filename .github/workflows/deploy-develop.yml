@@ -1,0 +1,57 @@
+name: "Deploy para VPS - ouvidoria.univertix.edu.br"
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  build_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Baixar o Código"
+        uses: actions/checkout@v4
+
+      - name: "Configurar Node"
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: "Instalar dependências"
+        run: npm install --legacy-peer-deps
+
+      - name: "Gerar Prisma Client no Runner"
+        run: npx prisma generate
+
+      - name: "Build do Next"
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: npm run build
+
+      - name: "Copiar arquivos para VPS"
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          source: "."
+          target: "/home/projetos/servidores/ouvidoria-univertix"
+          overwrite: true
+
+      - name: "Instalar deps e restartar app na VPS"
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            cd /home/projetos/servidores/ouvidoria-univertix
+            npm install --omit=dev --legacy-peer-deps
+            npx prisma generate
+            npx prisma db push
+            pm2 restart ouvidoria-univertix || pm2 start npm --name "ouvidoria-univertix" -- run start
+            pm2 save
