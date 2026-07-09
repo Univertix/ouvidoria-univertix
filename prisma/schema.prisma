@@ -1,0 +1,40 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+model Denuncia {
+  id                String      @id @default(uuid())
+  protocolo         String      @unique
+  anonima           Boolean     @default(true)
+  nome              String?
+  email             String?
+  telefone          String?
+  tipo              String
+  local             String
+  dataOcorrido      String
+  pessoasEnvolvidas String?     @db.Text
+  descricao         String      @db.Text
+  anexos            Json?
+  status            String      @default("RECEBIDA")
+  criadoEm          DateTime    @default(now())
+  atualizadoEm      DateTime    @updatedAt
+  historico         Historico[]
+
+  @@map("denuncias")
+}
+
+model Historico {
+  id                String    @id @default(uuid())
+  denunciaId        String
+  status            String
+  mensagem          String    @db.Text
+  observacaoInterna String?   @db.Text
+  criadoPor         String    @default("SISTEMA")
+  criadoEm          DateTime  @default(now())
+  denuncia          Denuncia  @relation(fields: [denunciaId], references: [id], onDelete: Cascade)
+
+  @@map("historico_denuncias")
+}
