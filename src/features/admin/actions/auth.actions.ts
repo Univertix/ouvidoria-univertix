@@ -60,3 +60,9 @@ export async function loginAction(usernameInput: string, passwordInput: string) 
     return { success: false, error: 'Erro interno ao processar o login.' };
   }
 }
+export async function logoutAction() {
+  const cookieStore = await cookies();
+  
+  // Deleta o cookie da sessão
+  cookieStore.delete(SESSION_COOKIE_NAME);
+}

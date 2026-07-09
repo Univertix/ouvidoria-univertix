@@ -6,7 +6,7 @@ export const denunciaSchema = z.object({
   email: z.string().optional(),
   telefone: z.string().optional(),
   tipo: z.enum(['ASSEDIO', 'FRAUDE', 'CORRUPCAO', 'DISCRIMINACAO', 'INFRAESTRUTURA', 'OUTROS'], {
-    errorMap: () => ({ message: 'Selecione um tipo de denúncia válido.' }),
+    message: 'Selecione um tipo de denúncia válido.',
   }),
   local: z.string().min(3, 'O local deve ser informado com mais detalhes.'),
   dataOcorrido: z.string().min(1, 'A data do ocorrido é obrigatória.'),
@@ -14,7 +14,7 @@ export const denunciaSchema = z.object({
   descricao: z.string().min(20, 'Forneça uma descrição detalhada de no mínimo 20 caracteres.'),
   anexos: z.array(z.string()).default([]),
   termosAceitos: z.literal(true, {
-    errorMap: () => ({ message: 'Você precisa aceitar os termos de confidencialidade.' }),
+    error: 'Você precisa aceitar os termos de confidencialidade.',
   }),
 }).superRefine((data, ctx) => {
   if (!data.anonima) {
@@ -35,5 +35,4 @@ export const denunciaSchema = z.object({
   }
 });
 
-// É ESTA LINHA QUE GERA O TIPO DENUNCIAINPUT
 export type DenunciaInput = z.infer<typeof denunciaSchema>;
