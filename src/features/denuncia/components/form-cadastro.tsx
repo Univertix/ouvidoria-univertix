@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react';
-import './form-cadastro.css'; // Importando o CSS
+import './form-cadastro.css';
 import { createDenunciaAction } from '@/features/denuncia/actions/create-denuncia.action';
+import { uploadAnexosAction, type AnexoUploaded } from '@/features/denuncia/actions/upload-anexo.action';
+import { ANEXO_MAX_ARQUIVOS } from '@/lib/upload-config';
 import { TipoDenuncia } from '@/types';
 import {
   ShieldCheck,
@@ -13,7 +15,9 @@ import {
   Loader2,
   Lock,
   EyeOff,
-  Info
+  Info,
+  Paperclip,
+  X
 } from 'lucide-react';
 
 const TIPOS_OCORRENCIA = [
@@ -34,6 +38,40 @@ export function FormCadastro() {
   const [erro, setErro] = useState<string | null>(null);
   const [termosAceitos, setTermosAceitos] = useState(false);
   const [descricao, setDescricao] = useState('');
+
+  const [anexos, setAnexos] = useState<AnexoUploaded[]>([]);
+  const [enviandoAnexo, setEnviandoAnexo] = useState(false);
+  const [erroAnexo, setErroAnexo] = useState('');
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (anexos.length + files.length > ANEXO_MAX_ARQUIVOS) {
+      setErroAnexo(`Máximo de ${ANEXO_MAX_ARQUIVOS} arquivos no total.`);
+      e.target.value = '';
+      return;
+    }
+
+    setEnviandoAnexo(true);
+    setErroAnexo('');
+
+    const formData = new FormData();
+    Array.from(files).forEach((f) => formData.append('anexos', f));
+
+    const res = await uploadAnexosAction(formData);
+    if (res.sucesso && res.anexos) {
+      setAnexos((prev) => [...prev, ...res.anexos!]);
+    } else {
+      setErroAnexo(res.erro || 'Erro ao enviar arquivo.');
+    }
+    setEnviandoAnexo(false);
+    e.target.value = '';
+  };
+
+  const removerAnexo = (id: string) => {
+    setAnexos((prev) => prev.filter((a) => a.id !== id));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -58,7 +96,7 @@ export function FormCadastro() {
       dataOcorrido: formData.get('dataOcorrido') as string,
       pessoasEnvolvidas: formData.get('pessoasEnvolvidas') as string,
       descricao: formData.get('descricao') as string,
-      anexos: [],
+      anexos,
       termosAceitos: true as const,
     };
 
@@ -84,14 +122,14 @@ export function FormCadastro() {
       <div className="ouvidoria-wrapper wrapper-sm">
         <div className="card success-container">
           <div className="success-line"></div>
-          
+
           <div className="success-icon-wrap">
             <CheckCircle2 size={32} className="success-icon" />
           </div>
-          
+
           <h2 className="success-title">Manifestação Registrada</h2>
           <p className="success-desc">
-            Sua denúncia foi enviada com sucesso e já está em nossa base segura. 
+            Sua denúncia foi enviada com sucesso e já está em nossa base segura.
             Utilize o código abaixo para consultar o andamento.
           </p>
 
@@ -103,7 +141,7 @@ export function FormCadastro() {
           <div className="protocol-warning">
             <Info size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
             <span>
-              Guarde este código em um local seguro. Por motivos de segurança e anonimato, 
+              Guarde este código em um local seguro. Por motivos de segurança e anonimato,
               ele não poderá ser recuperado se for perdido.
             </span>
           </div>
@@ -114,6 +152,7 @@ export function FormCadastro() {
               setIsAnonimo(true);
               setTermosAceitos(false);
               setDescricao('');
+              setAnexos([]);
             }}
             className="btn-secondary"
           >
@@ -127,7 +166,7 @@ export function FormCadastro() {
   // Visão do Formulário
   return (
     <div className="ouvidoria-wrapper">
-      
+
       {/* Cabeçalho */}
       <div className="header">
         <div className="header-top">
@@ -155,7 +194,7 @@ export function FormCadastro() {
       {/* Formulário */}
       <div className="card">
         <form onSubmit={handleSubmit}>
-          
+
           {/* Mensagem de Erro */}
           {erro && (
             <div className="alert-error">
@@ -172,7 +211,7 @@ export function FormCadastro() {
             </div>
 
             <div className="identity-grid">
-              <div 
+              <div
                 className={`identity-card ${isAnonimo ? 'active' : ''}`}
                 onClick={() => setIsAnonimo(true)}
               >
@@ -188,7 +227,7 @@ export function FormCadastro() {
                 </p>
               </div>
 
-              <div 
+              <div
                 className={`identity-card ${!isAnonimo ? 'active' : ''}`}
                 onClick={() => setIsAnonimo(false)}
               >
@@ -205,38 +244,37 @@ export function FormCadastro() {
               </div>
             </div>
 
-            {/* Campos caso escolha se identificar */}
             {!isAnonimo && (
               <div className="form-grid-2" style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
                 <div className="form-group form-grid-full">
                   <label htmlFor="nome" className="form-label">Nome Completo <span className="required-mark">*</span></label>
-                  <input 
-                    id="nome" 
-                    name="nome" 
-                    type="text" 
-                    required={!isAnonimo} 
-                    placeholder="Ex: João da Silva" 
+                  <input
+                    id="nome"
+                    name="nome"
+                    type="text"
+                    required={!isAnonimo}
+                    placeholder="Ex: João da Silva"
                     className="form-control"
                   />
                 </div>
                 <div className="form-group">
                   <label htmlFor="email" className="form-label">E-mail <span className="required-mark">*</span></label>
-                  <input 
-                    id="email" 
-                    name="email" 
-                    type="email" 
-                    required={!isAnonimo} 
-                    placeholder="joao@exemplo.com" 
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required={!isAnonimo}
+                    placeholder="joao@exemplo.com"
                     className="form-control"
                   />
                 </div>
                 <div className="form-group">
                   <label htmlFor="telefone" className="form-label">Telefone / WhatsApp</label>
-                  <input 
-                    id="telefone" 
-                    name="telefone" 
-                    type="tel" 
-                    placeholder="(00) 00000-0000" 
+                  <input
+                    id="telefone"
+                    name="telefone"
+                    type="tel"
+                    placeholder="(00) 00000-0000"
                     className="form-control"
                   />
                 </div>
@@ -261,38 +299,38 @@ export function FormCadastro() {
                   ))}
                 </select>
               </div>
-              
+
               <div className="form-group">
                 <label htmlFor="dataOcorrido" className="form-label">Data do Fato (Aproximada) <span className="required-mark">*</span></label>
-                <input 
-                  id="dataOcorrido" 
-                  name="dataOcorrido" 
-                  type="date" 
-                  required 
-                  max={new Date().toISOString().split('T')[0]} 
+                <input
+                  id="dataOcorrido"
+                  name="dataOcorrido"
+                  type="date"
+                  required
+                  max={new Date().toISOString().split('T')[0]}
                   className="form-control"
                 />
               </div>
 
               <div className="form-group">
                 <label htmlFor="local" className="form-label">Local Específico <span className="required-mark">*</span></label>
-                <input 
-                  id="local" 
-                  name="local" 
+                <input
+                  id="local"
+                  name="local"
                   type="text"
-                  required 
-                  placeholder="Ex: Refeitório, Almoxarifado..." 
+                  required
+                  placeholder="Ex: Refeitório, Almoxarifado..."
                   className="form-control"
                 />
               </div>
 
               <div className="form-group">
                 <label htmlFor="pessoasEnvolvidas" className="form-label">Envolvidos e/ou Testemunhas</label>
-                <input 
-                  id="pessoasEnvolvidas" 
-                  name="pessoasEnvolvidas" 
+                <input
+                  id="pessoasEnvolvidas"
+                  name="pessoasEnvolvidas"
                   type="text"
-                  placeholder="Cargos, setores ou nomes..." 
+                  placeholder="Cargos, setores ou nomes..."
                   className="form-control"
                 />
               </div>
@@ -317,6 +355,63 @@ export function FormCadastro() {
                   className="form-control"
                 />
               </div>
+
+              <div className="form-group form-grid-full">
+                <label className="form-label">Anexos (opcional)</label>
+                <input
+                  type="file"
+                  multiple
+                  accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx"
+                  onChange={handleFileChange}
+                  disabled={enviandoAnexo || anexos.length >= ANEXO_MAX_ARQUIVOS}
+                  className="form-control"
+                />
+                <span className="text-sm text-muted" style={{ marginTop: '4px' }}>
+                  Máximo {ANEXO_MAX_ARQUIVOS} arquivos, 10MB cada (PDF, imagens ou Word).
+                </span>
+
+                {enviandoAnexo && (
+                  <span className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+                    <Loader2 size={14} className="spinner" /> Enviando arquivo(s)...
+                  </span>
+                )}
+
+                {erroAnexo && (
+                  <span className="text-sm" style={{ color: 'var(--error-color)', marginTop: '8px' }}>{erroAnexo}</span>
+                )}
+
+                {anexos.length > 0 && (
+                  <ul style={{ marginTop: '12px', listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {anexos.map((a) => (
+                      <li
+                        key={a.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '10px 12px',
+                          background: 'var(--bg-body)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '6px',
+                        }}
+                      >
+                        <span className="text-sm" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Paperclip size={14} />
+                          {a.nome} <span className="text-muted">({(a.tamanho / 1024).toFixed(0)}KB)</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removerAnexo(a.id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--error-color)', display: 'flex' }}
+                          aria-label={`Remover ${a.nome}`}
+                        >
+                          <X size={16} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           </section>
 
@@ -332,7 +427,7 @@ export function FormCadastro() {
               <div className="terms-text-wrap">
                 <span className="terms-title">Declaração de Boa-Fé e Veracidade</span>
                 <span className="terms-desc">
-                  Confirmo que as informações prestadas são verdadeiras e estou ciente de que falsas acusações 
+                  Confirmo que as informações prestadas são verdadeiras e estou ciente de que falsas acusações
                   constituem infração às normas internas da instituição.
                 </span>
               </div>
@@ -342,8 +437,8 @@ export function FormCadastro() {
               <p className="action-disclaimer">
                 Ao clicar em enviar, você concorda com o envio seguro e criptografado destas informações para a equipe de ética.
               </p>
-              
-              <button type="submit" disabled={loading} className="btn-submit">
+
+              <button type="submit" disabled={loading || enviandoAnexo} className="btn-submit">
                 {loading && <Loader2 size={16} className="spinner" />}
                 {loading ? 'Registrando...' : 'Finalizar Manifestação'}
               </button>

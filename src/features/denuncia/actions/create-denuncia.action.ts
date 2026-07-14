@@ -1,33 +1,40 @@
-'use server'
+'use server';
 
 import { DenunciaRepository } from '@/repositories/denuncia.repository';
-// CORREÇÃO: Importamos o type DenunciaInput diretamente do schema!
-import { denunciaSchema, type DenunciaInput } from '@/schemas/denuncia.schema'; 
+import { createDriveFolder, moveAndRenameAnexo } from '@/lib/google-drive';
 
-const repository = new DenunciaRepository();
+const denunciaRepository = new DenunciaRepository();
 
-export async function createDenunciaAction(data: DenunciaInput) {
+export async function createDenunciaAction(data: any) {
   try {
-    const validData = denunciaSchema.parse(data);
-    
-    const protocolo = await repository.criar({
-      anonima: validData.anonima,
-      denunciante: validData.anonima ? null : {
-        nome: validData.nome!,
-        email: validData.email!,
-        telefone: validData.telefone,
-      },
-      tipo: validData.tipo,
-      local: validData.local,
-      dataOcorrido: validData.dataOcorrido,
-      pessoasEnvolvidas: validData.pessoasEnvolvidas,
-      descricao: validData.descricao,
-      anexos: validData.anexos,
-    });
+    // 1. Salva no banco de dados primeiro e resgata o protocolo gerado
+    const protocolo = await denunciaRepository.criar(data);
+
+    // 2. Lógica para organizar o Google Drive se existirem arquivos
+    if (data.anexos && data.anexos.length > 0) {
+      try {
+        // Cria a pasta no Google Drive com o número do protocolo
+        const folderId = await createDriveFolder(protocolo);
+
+        // Move cada anexo para dentro da nova pasta, renomeando com o protocolo na frente
+        for (const anexo of data.anexos) {
+          const novoNome = `${protocolo} - ${anexo.nome}`;
+          await moveAndRenameAnexo(anexo.id, novoNome, folderId);
+        }
+      } catch (driveError) {
+        // Usamos um try/catch interno aqui porque se houver qualquer instabilidade no 
+        // Google Drive na hora de mover, NÃO queremos mostrar erro pro usuário, 
+        // pois a denúncia e os anexos já estão salvos com segurança.
+        console.error('[ERRO_ORGANIZAR_DRIVE]', driveError);
+      }
+    }
 
     return { sucesso: true, protocolo };
   } catch (error) {
-    console.error("Erro de validação ou banco:", error);
-    return { sucesso: false, erro: 'Erro ao criar denúncia. Verifique os dados preenchidos.' };
+    console.error('[ERRO_CRIAR_DENUNCIA]', error);
+    return { 
+      sucesso: false, 
+      erro: 'Ocorreu um erro ao processar sua denúncia. Tente novamente.' 
+    };
   }
 }

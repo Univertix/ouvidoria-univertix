@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+export const anexoSchema = z.object({
+  id: z.string(),
+  nome: z.string(),
+  tamanho: z.number(),
+  tipo: z.string(),
+});
+
 export const denunciaSchema = z.object({
   anonima: z.boolean(),
   nome: z.string().optional(),
@@ -12,7 +19,7 @@ export const denunciaSchema = z.object({
   dataOcorrido: z.string().min(1, 'A data do ocorrido é obrigatória.'),
   pessoasEnvolvidas: z.string().optional(),
   descricao: z.string().min(20, 'Forneça uma descrição detalhada de no mínimo 20 caracteres.'),
-  anexos: z.array(z.string()).default([]),
+  anexos: z.array(anexoSchema).default([]),
   termosAceitos: z.literal(true, {
     error: 'Você precisa aceitar os termos de confidencialidade.',
   }),
