@@ -88,6 +88,27 @@ export function RespostaDenuncia({ denuncia }: { denuncia: any }) {
               </div>
             </div>
 
+            {/* NOVA SEÇÃO DE ANEXOS ADICIONADA AQUI */}
+            {denuncia.anexos && denuncia.anexos.length > 0 && (
+              <div className="form-group" style={{ marginTop: '24px' }}>
+                <span className="form-label">Anexos</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {denuncia.anexos.map((a: any) => (
+                    <a
+                      key={a.id}
+                      href={`/api/admin/anexo/${a.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-bold"
+                      style={{ color: 'var(--blue-600)', display: 'flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                    >
+                      📎 {a.nome}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+              
             <div className="details-box" style={{ background: '#fff', marginTop: '32px' }}>
               <h3 className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: 'var(--slate-900)' }}>
                 <ShieldAlert size={18} color="var(--blue-600)" /> Dados do Denunciante (Sigiloso)
