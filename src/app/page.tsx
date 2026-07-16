@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ShieldCheck, Search, Lock, Eye, MessageSquareText, ChevronRight } from 'lucide-react';
+import { ShieldCheck, Search, Lock, Eye, MessageSquareText, ChevronRight, Inbox } from 'lucide-react';
 import { SiteHeader } from '@/components/site-header'; // Assumindo que este já está ok
 
 export default function HomePage() {
@@ -25,14 +25,22 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="hero-actions">
-              <Link href="/denunciar" className="btn btn-primary" style={{ padding: '16px 32px', fontSize: '1.125rem' }}>
-                Registrar Denúncia <ChevronRight size={20} />
-              </Link>
-              <Link href="/acompanhar" className="btn btn-glass" style={{ padding: '16px 32px', fontSize: '1.125rem' }}>
-                <Search size={20} /> Acompanhar Protocolo
-              </Link>
-            </div>
+           <div className="hero-actions">
+  <Link href="https://matipo.univertix.edu.br/ouvidoria" className="btn btn-glass">
+    <Inbox size={20} className="icon" />
+    <span>Sugerir ou Reclamar</span>
+  </Link>
+  
+  <Link href="/denunciar" className="btn btn-primary main-action">
+    <span>Registrar Denúncia</span>
+    <ChevronRight size={20} className="icon" />
+  </Link>
+  
+  <Link href="/acompanhar" className="btn btn-glass">
+    <Search size={20} className="icon" />
+    <span>Acompanhar Protocolo</span>
+  </Link>
+</div>
           </div>
         </section>
 
